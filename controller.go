@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -43,6 +44,7 @@ type Controller struct {
 	ping    chan chan<- Pong
 	wg      sync.WaitGroup
 	quit    chan struct{}
+	hasQuit int32
 
 	Config struct {
 		Zk struct {
@@ -266,6 +268,7 @@ func (c *Controller) Run() error {
 		close(c.LeaderChange)
 	}()
 	defer c.Scheduler.Disconnect()
+	defer c.tryShutdown()
 
 	log.Info("Starting Controller...")
 	controllerStart := time.Now()
@@ -629,8 +632,8 @@ func (c *Controller) Run() error {
 					var err error
 					pipelines, pipelineWatch, err = c.Storage.Pipelines(true)
 					if err != nil {
-						log.Warnf("Failed to read tasks from storage backend while being promoted: %v", err)
-						log.Warn("Since I couldn't get the tasks, I will shutdown.")
+						log.Warnf("Failed to read pipelines from storage backend while being promoted: %v", err)
+						log.Warn("Since I couldn't get the pipelines, I will shutdown.")
 						return err
 					}
 
@@ -715,8 +718,8 @@ func (c *Controller) Run() error {
 				Tasks:     len(tasks),
 			}
 		case <-c.quit:
-			// log.Debug("Tearing down framework...")
-			//c.Scheduler.Teardown()
+			log.Debug("Tearing down framework...")
+			c.Scheduler.Teardown()
 			return nil
 		}
 	}
@@ -728,15 +731,27 @@ func (c *Controller) Ping() Pong {
 	return <-p
 }
 
+func (c *Controller) tryShutdown() {
+	if atomic.CompareAndSwapInt32(&c.hasQuit, 0, 1) {
+		close(c.quit)
+	}
+}
+
 func (c *Controller) Shutdown() {
-	close(c.quit)
+	c.tryShutdown()
 	c.wg.Wait()
 }
 
 func (c *Controller) OnLeadershipChange(isLeader bool) {
-	c.LeaderChange <- isLeader
+	select {
+	case c.LeaderChange <- isLeader:
+	case <-c.quit:
+	}
 }
 
 func (c *Controller) OnSchedulerEvent(s mesos.Scheduler, event msg.Event) {
-	c.MesosEvents <- event
+	select {
+	case c.MesosEvents <- event:
+	case <-c.quit:
+	}
 }

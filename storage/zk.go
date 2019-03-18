@@ -58,7 +58,7 @@ func NewZkStorage(connectOpt zkStorageOpt, options ...zkStorageOpt) (Storage, er
 		z.Prefix = "/faustian"
 	}
 	if exists, _, err := z.Conn.Exists(path.Join(z.Prefix, "pipelines")); err == nil && !exists {
-		_, err := z.Conn.Create(path.Join(z.Prefix, "pipelines"), []byte{}, 0, zk.WorldACL(zk.PermAll))
+		_, err := z.Conn.Create(path.Join(z.Prefix, "pipelines"), []byte{'{', '}'}, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +66,7 @@ func NewZkStorage(connectOpt zkStorageOpt, options ...zkStorageOpt) (Storage, er
 		return nil, err
 	}
 	if exists, _, err := z.Conn.Exists(path.Join(z.Prefix, "tasks")); err == nil && !exists {
-		_, err := z.Conn.Create(path.Join(z.Prefix, "tasks"), []byte{}, 0, zk.WorldACL(zk.PermAll))
+		_, err := z.Conn.Create(path.Join(z.Prefix, "tasks"), []byte{'{', '}'}, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			return nil, err
 		}
@@ -139,6 +139,9 @@ func (z *zkStorage) Pipelines(watch bool) (map[string]Pipeline, <-chan zk.Event,
 		return map[string]Pipeline{}, ch, err
 	} else if err != nil {
 		return nil, nil, err
+	}
+	if len(pipelines) == 0 {
+		return map[string]Pipeline{}, ch, err
 	}
 	var p map[string]Pipeline
 	if err := json.Unmarshal(pipelines, &p); err == nil {
