@@ -27,7 +27,7 @@ type cliArgs struct {
 func init() {
 
 	options := []cliArgs{
-		{"listen-addr", ":1424", "Listen address that faustian should listen on."},
+		{"listen-addr", ":" + defaultGetEnv("PORT", "1424"), "Listen address that faustian should listen on."},
 		{"hostname", "", "Hostname"},
 		{"mesos-master", DEFAULT_MESOS, "Mesos Master"},
 		{"mesos-user", "root", "Mesos user for this framework."},
@@ -82,6 +82,13 @@ func intro() {
 	fmt.Println("/ / | (_| | |_| \\__ \\ |_| | (_| | | | |")
 	fmt.Println("\\/   \\__,_|\\__,_|___/\\__|_|\\__,_|_| |_|")
 	fmt.Println("github.com/nemosupremo/faustian")
+}
+
+func defaultGetEnv(k string, def string) string {
+	if s := os.Getenv(k); s != "" {
+		return s
+	}
+	return def
 }
 
 func faustianServer(*cobra.Command, []string) {
