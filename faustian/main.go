@@ -14,5 +14,5 @@ var (
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	cmd.Execute()
+	cmd.Execute(Version)
 }
