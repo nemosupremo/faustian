@@ -41,6 +41,8 @@ func (c *Controller) Routes() http.Handler {
 		})
 	})
 
+	r.Get("/ping", c.StatusPing)
+
 	r.Get("/pipelines", c.Pipelines)
 	r.Post("/pipelines", c.CreatePipeline)
 
@@ -61,6 +63,11 @@ func (c *Controller) Error(w http.ResponseWriter, err error, code int) {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 	}{code, err.Error()})
+}
+
+func (c *Controller) StatusPing(w http.ResponseWriter, r *http.Request) {
+	pong := c.Ping()
+	json.NewEncoder(w).Encode(pong)
 }
 
 func (c *Controller) Pipelines(w http.ResponseWriter, r *http.Request) {

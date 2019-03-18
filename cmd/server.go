@@ -130,6 +130,7 @@ func faustianServer(*cobra.Command, []string) {
 	conf.Aws.AsgMap = viper.GetStringSlice("aws-asg-map")
 
 	if controller, err := faustian.NewController(conf); err == nil {
+		controller.SetVersion(rootCmd.Version)
 		running := make(chan struct{})
 		go func() {
 			defer close(running)

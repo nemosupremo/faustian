@@ -39,8 +39,10 @@ type Controller struct {
 	AutoscaleDefaultRole string
 	ScaledGroups         map[string]string
 
-	wg   sync.WaitGroup
-	quit chan struct{}
+	version string
+	ping    chan chan<- Pong
+	wg      sync.WaitGroup
+	quit    chan struct{}
 
 	Config struct {
 		Zk struct {
@@ -80,12 +82,22 @@ type ControllerConfig struct {
 	}
 }
 
+type Pong struct {
+	OK        bool          `json:"ok"`
+	Leader    bool          `json:"leader"`
+	Version   string        `json:"version"`
+	Uptime    time.Duration `json:"uptime"`
+	Pipelines int           `json:"pipelines"`
+	Tasks     int           `json:"tasks"`
+}
+
 func NewController(config ControllerConfig) (*Controller, error) {
 	c := &Controller{
 		MesosEvents:  make(chan msg.Event),
 		LeaderChange: make(chan bool),
 		ScaledGroups: make(map[string]string),
 		quit:         make(chan struct{}),
+		ping:         make(chan chan<- Pong),
 
 		AutoscaleDefaultRole: config.Autoscaling.DefaultRole,
 	}
@@ -211,6 +223,10 @@ func NewController(config ControllerConfig) (*Controller, error) {
 	return c, nil
 }
 
+func (c *Controller) SetVersion(v string) {
+	c.version = v
+}
+
 func (c *Controller) Run() error {
 	c.wg.Add(1)
 	isLeader := false
@@ -252,6 +268,7 @@ func (c *Controller) Run() error {
 	defer c.Scheduler.Disconnect()
 
 	log.Info("Starting Controller...")
+	controllerStart := time.Now()
 	go c.Serve()
 	for {
 		select {
@@ -688,12 +705,27 @@ func (c *Controller) Run() error {
 			} else {
 				reconcileTimer.C = nil
 			}
+		case pong := <-c.ping:
+			pong <- Pong{
+				OK:        true,
+				Leader:    isLeader,
+				Uptime:    time.Since(controllerStart),
+				Version:   c.version,
+				Pipelines: len(pipelines),
+				Tasks:     len(tasks),
+			}
 		case <-c.quit:
 			// log.Debug("Tearing down framework...")
 			//c.Scheduler.Teardown()
 			return nil
 		}
 	}
+}
+
+func (c *Controller) Ping() Pong {
+	p := make(chan Pong, 1)
+	c.ping <- p
+	return <-p
 }
 
 func (c *Controller) Shutdown() {
