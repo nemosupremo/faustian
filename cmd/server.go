@@ -112,6 +112,10 @@ func faustianServer(*cobra.Command, []string) {
 	conf.Scheduler.Roles = viper.GetStringSlice("roles")
 	conf.Scheduler.FailoverTimeout = viper.GetDuration("mesos-failover-timeout")
 
+	conf.Vault.Addr = viper.GetString("vault-addr")
+	conf.Vault.Token = viper.GetString("vault-token")
+	conf.Vault.GatekeeperAddr = viper.GetString("gatekeeper-addr")
+
 	conf.Autoscaling.Provider = viper.GetString("autoscaling-provider")
 	conf.Autoscaling.DefaultRole = viper.GetString("autoscaling-default-role")
 	conf.Aws.AccessKey = viper.GetString("aws-access-key-id")
