@@ -57,6 +57,14 @@ func NewZkStorage(connectOpt zkStorageOpt, options ...zkStorageOpt) (Storage, er
 	if z.Prefix == "" || z.Prefix == "/" {
 		z.Prefix = "/faustian"
 	}
+	if exists, _, err := z.Conn.Exists(path.Join(z.Prefix, "pipelines")); err == nil && !exists {
+		_, err := z.Conn.Create(path.Join(z.Prefix, "pipelines"), []byte{}, 0, zk.WorldACL(zk.PermAll))
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
 	if exists, _, err := z.Conn.Exists(path.Join(z.Prefix, "tasks")); err == nil && !exists {
 		_, err := z.Conn.Create(path.Join(z.Prefix, "tasks"), []byte{}, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
