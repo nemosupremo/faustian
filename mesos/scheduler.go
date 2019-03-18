@@ -59,12 +59,13 @@ type FrameworkIDStore interface {
 type EventCallback func(Scheduler, msg.Event)
 
 type scheduler struct {
-	Name     string
-	User     string
-	Roles    []string
-	Hostname string
-	WebUI    string
-	Masters  struct {
+	Name            string
+	User            string
+	Roles           []string
+	Hostname        string
+	WebUI           string
+	FailoverTimeout time.Duration
+	Masters         struct {
 		Protocol string
 		Hosts    []string
 		Host     string
@@ -86,25 +87,27 @@ type scheduler struct {
 }
 
 type SchedulerConfig struct {
-	Name        string
-	User        string
-	Roles       []string
-	Hostname    string
-	WebUI       string
-	MesosMaster string
-	Callbacks   []EventCallback
-	FrameworkID FrameworkIDStore
+	Name            string
+	User            string
+	Roles           []string
+	Hostname        string
+	WebUI           string
+	MesosMaster     string
+	Callbacks       []EventCallback
+	FrameworkID     FrameworkIDStore
+	FailoverTimeout time.Duration
 }
 
 func NewScheduler(frameworkId FrameworkIDStore, conf SchedulerConfig) (Scheduler, error) {
 	s := &scheduler{
-		Name:      conf.Name,
-		User:      conf.User,
-		Roles:     conf.Roles,
-		Hostname:  conf.Hostname,
-		WebUI:     conf.WebUI,
-		Callbacks: conf.Callbacks,
-		ID:        frameworkId,
+		Name:            conf.Name,
+		User:            conf.User,
+		Roles:           conf.Roles,
+		Hostname:        conf.Hostname,
+		WebUI:           conf.WebUI,
+		Callbacks:       conf.Callbacks,
+		ID:              frameworkId,
+		FailoverTimeout: conf.FailoverTimeout,
 
 		Client: &http.Client{},
 	}
@@ -221,9 +224,7 @@ func (s *scheduler) Subscribe() error {
 		return err
 	}
 	m.Subscribe.FrameworkInfo.User = s.User
-	m.Subscribe.FrameworkInfo.FailoverTimeout = (24 * 7 * time.Hour).Seconds()
-	m.Subscribe.FrameworkInfo.FailoverTimeout = 300
-	m.Subscribe.FrameworkInfo.FailoverTimeout = (24 * 1 * time.Hour).Seconds()
+	m.Subscribe.FrameworkInfo.FailoverTimeout = s.FailoverTimeout.Seconds()
 	m.Subscribe.FrameworkInfo.Roles = s.Roles
 	m.Subscribe.FrameworkInfo.Hostname = s.Hostname
 	m.Subscribe.FrameworkInfo.WebUIURL = s.WebUI

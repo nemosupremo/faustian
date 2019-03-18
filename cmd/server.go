@@ -31,6 +31,7 @@ func init() {
 		{"hostname", "", "Hostname"},
 		{"mesos-master", DEFAULT_MESOS, "Mesos Master"},
 		{"mesos-user", "root", "Mesos user for this framework."},
+		{"mesos-failover-timeout", 24 * 7 * time.Hour, "Mesos failover timeout"},
 		{"zookeeper", DEFAULT_ZK, "Zookeeper"},
 		{"roles", []string{"*"}, "Mesos Roles"},
 
@@ -109,6 +110,7 @@ func faustianServer(*cobra.Command, []string) {
 	conf.Scheduler.Name = "Faustian"
 	conf.Scheduler.User = viper.GetString("mesos-user")
 	conf.Scheduler.Roles = viper.GetStringSlice("roles")
+	conf.Scheduler.FailoverTimeout = viper.GetDuration("mesos-failover-timeout")
 
 	conf.Autoscaling.Provider = viper.GetString("autoscaling-provider")
 	conf.Autoscaling.DefaultRole = viper.GetString("autoscaling-default-role")
