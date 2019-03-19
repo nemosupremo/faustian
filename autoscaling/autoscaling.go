@@ -120,6 +120,8 @@ func NewAwsAutoScaler(awsCredentials *credentials.Credentials, groupIds ...strin
 								g.Memory = mem
 							}
 						}
+					} else {
+						return nil, err
 					}
 				}
 			} else {
