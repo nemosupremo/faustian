@@ -89,7 +89,7 @@ func (c *Controller) Pipelines(w http.ResponseWriter, r *http.Request) {
 					t.Ok = true
 					for _, proc := range t.Processes {
 						switch proc.Status {
-						case "TASK_RUNNING", "TASK_STAGING", "TASK_STARTING":
+						case "TASK_RUNNING", "TASK_STAGING", "TASK_STARTING", "TASK_KILLING":
 
 						default:
 							t.Ok = false

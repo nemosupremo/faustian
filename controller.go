@@ -559,7 +559,7 @@ func (c *Controller) Run() error {
 						hasNew = true
 					}
 				}
-				syncTasks.Wake()
+
 				for _, taskId := range taskIds {
 					if idx := sort.SearchStrings(newTasks, taskId); idx == len(newTasks) || newTasks[idx] != taskId {
 						log.Infof("Task %v was removed from the state. Killing task...", taskId)
@@ -573,6 +573,7 @@ func (c *Controller) Run() error {
 						delete(tasks, taskId)
 					}
 				}
+				syncTasks.Wake()
 				taskIds = newTasks
 
 				if isSupressed && hasNew {
