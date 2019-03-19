@@ -15,6 +15,7 @@ type Storage interface {
 
 	Tasks(bool) ([]string, <-chan zk.Event, error)
 	SaveTasks(map[string]*Task) error
+	TasksInfo() (map[string]*Task, error)
 
 	Pipelines(bool) (map[string]Pipeline, <-chan zk.Event, error)
 	SavePipeline(Pipeline, bool) error

@@ -123,6 +123,21 @@ func (z *zkStorage) SaveTasks(tasks map[string]*Task) error {
 	}
 }
 
+func (z *zkStorage) TasksInfo() (map[string]*Task, error) {
+	if btasks, _, err := z.Conn.Get(path.Join(z.Prefix, "tasks")); err == nil {
+		var tasks map[string]*Task
+		if err := json.Unmarshal(btasks, &tasks); err == nil {
+			return tasks, nil
+		} else {
+			return nil, err
+		}
+	} else if err == zk.ErrNoNode {
+		return map[string]*Task{}, nil
+	} else {
+		return nil, err
+	}
+}
+
 func (z *zkStorage) Pipelines(watch bool) (map[string]Pipeline, <-chan zk.Event, error) {
 	var pipelines []byte
 	var ch <-chan zk.Event

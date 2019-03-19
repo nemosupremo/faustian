@@ -94,11 +94,14 @@ type Pipeline struct {
 	Labels            map[string]string `json:"labels"`
 	Environment       map[string]string `json:"environment"`
 	Created           time.Time         `json:"created"`
+	Updated           time.Time         `json:"updated"`
 	ExecutorResources struct {
 		CPU  float64 `json:"cpu"`
 		Mem  float64 `json:"mem"`
 		Disk float64 `json:"disk"`
 	} `json:"executor_resources"`
+	Metadata map[string]string `json:"metadata,omitempty"`
+	Tasks    []Task            `json:"tasks,omitempty"`
 }
 
 type TaskProcess struct {
@@ -117,6 +120,7 @@ type Task struct {
 	Launched    time.Time               `json:"launched"`
 	Failures    int                     `json:"failures"`
 	Updated     time.Time               `json:"updated"`
+	Ok          bool                    `json:"ok"`
 	Processes   map[string]*TaskProcess `json:"processes"`
 }
 
@@ -373,13 +377,13 @@ func (p *Pipeline) TaskInfo(taskID TaskID, offer msg.Offer) []msg.TaskInfo {
 		t.CommandInfo.Shell = proc.Shell
 		t.CommandInfo.Value = proc.Command
 		t.CommandInfo.Arguments = proc.Arguments
+
 		for name, value := range p.Environment {
 			t.CommandInfo.Environment.Variable = append(t.CommandInfo.Environment.Variable, msg.Variable{
 				Name:  name,
 				Value: value,
 			})
 		}
-
 		for name, value := range proc.Environment {
 			t.CommandInfo.Environment.Variable = append(t.CommandInfo.Environment.Variable, msg.Variable{
 				Name:  name,

@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/go-chi/chi"
+	"github.com/go-chi/cors"
 	"github.com/google/go-cmp/cmp"
 	"github.com/nemosupremo/faustian/storage"
 	"github.com/segmentio/ksuid"
@@ -34,6 +35,14 @@ func (c *Controller) Serve() {
 func (c *Controller) Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Use(NewLogger(nil))
+	r.Use(cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "Origin", "Content-Length", "sessionId"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}).Handler)
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
@@ -72,7 +81,34 @@ func (c *Controller) StatusPing(w http.ResponseWriter, r *http.Request) {
 
 func (c *Controller) Pipelines(w http.ResponseWriter, r *http.Request) {
 	if pipelines, _, err := c.Storage.Pipelines(false); err == nil {
-		json.NewEncoder(w).Encode(pipelines)
+		var r []storage.Pipeline
+		if tasks, err := c.Storage.TasksInfo(); err == nil {
+			for _, task := range tasks {
+				if p, ok := pipelines[task.PipelineID]; ok {
+					t := *task
+					t.Ok = true
+					for _, proc := range t.Processes {
+						switch proc.Status {
+						case "TASK_RUNNING", "TASK_STAGING", "TASK_STARTING":
+
+						default:
+							t.Ok = false
+						}
+						if !t.Ok {
+							break
+						}
+					}
+					p.Tasks = append(p.Tasks, t)
+					pipelines[task.PipelineID] = p
+				}
+			}
+			for _, pipe := range pipelines {
+				r = append(r, pipe)
+			}
+			json.NewEncoder(w).Encode(r)
+		} else {
+			c.Error(w, err, http.StatusInternalServerError)
+		}
 	} else {
 		c.Error(w, err, http.StatusInternalServerError)
 	}
@@ -141,6 +177,7 @@ func (c *Controller) CreatePipeline(w http.ResponseWriter, r *http.Request) {
 		}
 		pipeline.Key = ksuid.New().String()
 		pipeline.Created = time.Now()
+		pipeline.Updated = pipeline.Created
 		operation := func() error {
 			err := c.Storage.SavePipeline(pipeline, false)
 			if err != storage.ErrConflict {
@@ -216,6 +253,7 @@ func (c *Controller) UpdatePipeline(w http.ResponseWriter, r *http.Request) {
 					p.ID = pipelineID
 					p.Key = ksuid.New().String()
 					p.Created = created
+					p.Updated = time.Now()
 
 					operation := func() error {
 						err := c.Storage.SavePipeline(p, true)

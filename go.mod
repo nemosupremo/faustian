@@ -6,6 +6,7 @@ require (
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/franela/goreq v0.0.0-20171204163338-bcd34c9993f8
 	github.com/go-chi/chi v4.0.2+incompatible
+	github.com/go-chi/cors v1.0.0
 	github.com/gogo/protobuf v1.2.1
 	github.com/google/go-cmp v0.2.0
 	github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3

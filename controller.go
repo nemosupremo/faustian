@@ -463,7 +463,7 @@ func (c *Controller) Run() error {
 								}
 							} else {
 								tasks[taskID.GroupID()] = &storage.Task{
-									ID:         storage.TaskID(taskId),
+									ID:         storage.TaskID(taskID.GroupID()),
 									PipelineID: storage.TaskID(taskId).PipelineID(),
 									Updated:    time.Now(),
 									Processes: map[string]*storage.TaskProcess{
@@ -551,7 +551,7 @@ func (c *Controller) Run() error {
 				for _, taskId := range newTasks {
 					if _, ok := tasks[taskId]; !ok {
 						tasks[taskId] = &storage.Task{
-							ID:         storage.TaskID(taskId),
+							ID:         storage.TaskID(storage.TaskID(taskId).GroupID()),
 							PipelineID: storage.TaskID(taskId).PipelineID(),
 							Updated:    time.Now(),
 							Processes:  make(map[string]*storage.TaskProcess),
