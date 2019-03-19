@@ -718,8 +718,6 @@ func (c *Controller) Run() error {
 				Tasks:     len(tasks),
 			}
 		case <-c.quit:
-			log.Debug("Tearing down framework...")
-			c.Scheduler.Teardown()
 			return nil
 		}
 	}
