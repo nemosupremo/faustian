@@ -140,6 +140,7 @@ func (mp *zkMemberPool) onMembershipChange() (<-chan zk.Event, error) {
 			if seqNo, err := strconv.Atoi(child[len(child)-10:]); err == nil {
 				if seqNo < leaderNo {
 					leader = b[1]
+					leaderNo = seqNo
 				}
 			} else {
 				log.Warnf("Membership: Failed to parse sequence number for node %v", child)
