@@ -90,9 +90,9 @@ func (c *Controller) Pipelines(w http.ResponseWriter, r *http.Request) {
 					t.Failing = false
 					for _, proc := range t.Processes {
 						switch proc.Status {
-						case "TASK_RUNNING", "TASK_STAGING", "TASK_STARTING", "TASK_KILLING":
+						case "TASK_RUNNING", "TASK_KILLING":
 
-						case "", "TASK_KILLED":
+						case "", "TASK_KILLED", "TASK_STAGING", "TASK_STARTING":
 							t.Ok = false
 						default:
 							t.Ok = false
