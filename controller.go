@@ -498,6 +498,27 @@ func (c *Controller) Run() error {
 							AgentID: event.Update.Status.AgentID.Value,
 							Updated: task.Updated,
 						}
+
+						if mesos.IsTerminalState(event.Update.Status.State) {
+							delete(tasksKilling, event.Update.Status.TaskID.Value)
+							// check if this task is supposed to be running
+							if idx := sort.SearchStrings(taskIds, statusTaskID.GroupID()); idx == len(taskIds) || taskIds[idx] != statusTaskID.GroupID() {
+								// this task is not supposed to be running
+								// if all the processes are terminal
+								// remove the task from the internal state.
+								taskTerminal := true
+								for _, process := range task.Processes {
+									if !mesos.IsTerminalState(process.Status) {
+										taskTerminal = false
+										break
+									}
+								}
+								if taskTerminal {
+									delete(tasks, statusTaskID.GroupID())
+								}
+							}
+						}
+
 						if len(reconcileTasks) == 0 {
 							syncTasks.Wake()
 						}
@@ -570,7 +591,9 @@ func (c *Controller) Run() error {
 								log.Warnf("Failed to kill task %v: %v", taskId, err)
 							}
 						}
-						delete(tasks, taskId)
+						if t, ok := tasks[taskId]; ok {
+							t.Killing = true
+						}
 					}
 				}
 				syncTasks.Wake()
@@ -672,6 +695,8 @@ func (c *Controller) Run() error {
 						reconcileTimer = backoff.NewTicker(b)
 					}
 					reconcileProtectCounter = 1
+
+					tasks = make(map[string]*storage.Task)
 
 					if err := c.Scheduler.Revive(""); err == nil {
 						log.Info("Revive'd framework.")

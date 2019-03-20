@@ -122,6 +122,7 @@ type Task struct {
 	Updated     time.Time               `json:"updated"`
 	Ok          bool                    `json:"ok"`
 	Failing     bool                    `json:"failing"`
+	Killing     bool                    `json:"killing"`
 	Processes   map[string]*TaskProcess `json:"processes"`
 }
 
@@ -419,6 +420,9 @@ func (p *Pipeline) GenerateTasks() []Task {
 }
 
 func (t *Task) IsRunnable() bool {
+	if t.Killing {
+		return false
+	}
 	if t.Launching {
 		return false
 	}

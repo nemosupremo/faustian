@@ -91,5 +91,40 @@ func mesosMasters(master string) ([]string, string, error) {
 		return nil, protocol, errMesosUnreachable
 	}
 	return masterHosts, protocol, nil
+}
 
+func IsTerminalState(state string) bool {
+	switch state {
+	// TERMINAL
+	case "TASK_ERROR":
+		return true
+	case "TASK_FAILED":
+		return true
+	case "TASK_DROPPED":
+		return true
+	case "TASK_GONE":
+		return true
+	case "TASK_GONE_BY_OPERATOR":
+		return true
+	case "TASK_FINISHED":
+		return true
+	case "TASK_UNKNOWN":
+		return true
+	case "TASK_KILLED":
+		return true
+	case "TASK_LOST":
+		return true
+	// NON-TERMINAL
+	case "TASK_KILLING":
+		return false
+	case "TASK_RUNNING":
+		return false
+	case "TASK_STAGING":
+		return false
+	case "TASK_STARTING":
+		return false
+	case "TASK_UNREACHABLE":
+		return false
+	}
+	return false
 }
