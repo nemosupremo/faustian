@@ -86,16 +86,17 @@ func (c *Controller) Pipelines(w http.ResponseWriter, r *http.Request) {
 			for _, task := range tasks {
 				if p, ok := pipelines[task.PipelineID]; ok {
 					t := *task
-					t.Ok = true
+					t.Ok = len(t.Processes) > 0
+					t.Failing = false
 					for _, proc := range t.Processes {
 						switch proc.Status {
 						case "TASK_RUNNING", "TASK_STAGING", "TASK_STARTING", "TASK_KILLING":
 
+						case "", "TASK_KILLED":
+							t.Ok = false
 						default:
 							t.Ok = false
-						}
-						if !t.Ok {
-							break
+							t.Failing = true
 						}
 					}
 					p.Tasks = append(p.Tasks, t)

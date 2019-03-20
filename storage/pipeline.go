@@ -121,6 +121,7 @@ type Task struct {
 	Failures    int                     `json:"failures"`
 	Updated     time.Time               `json:"updated"`
 	Ok          bool                    `json:"ok"`
+	Failing     bool                    `json:"failing"`
 	Processes   map[string]*TaskProcess `json:"processes"`
 }
 
