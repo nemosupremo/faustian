@@ -148,7 +148,7 @@ func (s *scheduler) StreamId() string {
 	return ""
 }
 
-func (s *scheduler) subscribeLoop(resp *http.Response, fr recordio.Reader) error {
+func (s *scheduler) subscribeLoop(resp *http.Response, fr recordio.Reader, cb chan<- struct{}) error {
 	s.SubscriberWait.Add(1)
 	atomic.StoreInt32(&s.Subscribed, 1)
 	defer atomic.StoreInt32(&s.Subscribed, 0)
@@ -186,6 +186,10 @@ func (s *scheduler) subscribeLoop(resp *http.Response, fr recordio.Reader) error
 			}
 		}
 	}(fr)
+
+	go func(cb chan<- struct{}) {
+		cb <- struct{}{}
+	}(cb)
 
 	for {
 		select {
@@ -254,7 +258,9 @@ func (s *scheduler) Subscribe() error {
 							return err
 						}
 						s.heartbeatInterval = time.Duration(event.Subscribed.HeartbeatInterval * float64(time.Second))
-						go s.subscribeLoop(resp, fr)
+						cb := make(chan struct{})
+						go s.subscribeLoop(resp, fr, cb)
+						<-cb
 						return nil
 					} else if event.Type == msg.ERROR {
 						resp.Body.Close()

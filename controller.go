@@ -276,6 +276,12 @@ func (c *Controller) Run() error {
 	for {
 		select {
 		case <-ticker.C:
+			if isLeader && !c.Scheduler.IsSubscribed() {
+				// TODO: Do something smarter here
+				log.Warnf("We are the leader, but we are unsubscribed?")
+				log.Warnf("Quitting...")
+				return errors.New("Unexpected unsubscribe")
+			}
 			if isLeader && c.Scheduler.IsSubscribed() {
 				if !lastMesosHeartbeat.IsZero() &&
 					time.Now().Sub(lastMesosHeartbeat)/c.Scheduler.HeartbeatInterval() >= 5 {
