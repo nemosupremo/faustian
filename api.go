@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -61,8 +62,6 @@ func (c *Controller) Routes() http.Handler {
 
 	// r.Get("/tasks", c.Tasks)
 	// r.Get("/pipelines/{pipelineID}/tasks", c.Tasks)
-	// r.Post("/pipelines/{pipelineID}/tasks", c.CreateTask)
-
 	return r
 }
 
@@ -106,6 +105,7 @@ func (c *Controller) Pipelines(w http.ResponseWriter, r *http.Request) {
 			for _, pipe := range pipelines {
 				r = append(r, pipe)
 			}
+			sort.Slice(r, func(i, j int) bool { return r[i].Created.Before(r[j].Created) })
 			json.NewEncoder(w).Encode(r)
 		} else {
 			c.Error(w, err, http.StatusInternalServerError)
