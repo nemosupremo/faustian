@@ -44,6 +44,7 @@ func init() {
 
 		{"aws-access-key-id", "", "AWS Access Key for AutoScaling"},
 		{"aws-secret-access-key", "", "AWS Secret Key for AutoScaling"},
+		{"aws-asg-regions", []string{"us-east-1"}, "List of regions were autoscaling resources are located."},
 		{"aws-asg-map", []string{}, "Map mesos roles to autoscale groups. Format is [role]:[asg groupname]"},
 	}
 
@@ -125,9 +126,11 @@ func faustianServer(*cobra.Command, []string) {
 
 	conf.Autoscaling.Provider = viper.GetString("autoscaling-provider")
 	conf.Autoscaling.DefaultRole = viper.GetString("autoscaling-default-role")
+
 	conf.Aws.AccessKey = viper.GetString("aws-access-key-id")
 	conf.Aws.SecretKey = viper.GetString("aws-secret-access-key")
 	conf.Aws.AsgMap = viper.GetStringSlice("aws-asg-map")
+	conf.Aws.Regions = viper.GetStringSlice("aws-asg-regions")
 
 	if controller, err := faustian.NewController(conf); err == nil {
 		controller.SetVersion(rootCmd.Version)

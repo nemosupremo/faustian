@@ -26,10 +26,11 @@ type awsAutoscalingGroup struct {
 	*autoscaling.Group
 	VCPU   int
 	Memory datasize.ByteSize
+	Region string
 }
 
 type awsAutoScaler struct {
-	svc     *autoscaling.AutoScaling
+	svc     map[string]*autoscaling.AutoScaling
 	session *session.Session
 	creds   *credentials.Credentials
 	groups  map[string]*awsAutoscalingGroup
@@ -81,58 +82,68 @@ func (a *awsAutoScaler) InstanceResources(instanceType string) (int, datasize.By
 	}
 }
 
-func NewAwsAutoScaler(awsCredentials *credentials.Credentials, groupIds ...string) (AutoScaler, error) {
+func NewAwsAutoScaler(awsCredentials *credentials.Credentials, regions []string, groupIds ...string) (AutoScaler, error) {
 	a := &awsAutoScaler{}
 
 	// Configure AWS
 	if s, err := session.NewSession(&aws.Config{
-		Region:      aws.String("us-east-2"),
+		Region:      aws.String("us-east-1"),
 		Credentials: awsCredentials,
 	}); err == nil {
 		a.session = s
 		a.creds = awsCredentials
-		a.svc = autoscaling.New(a.session)
+		a.svc = make(map[string]*autoscaling.AutoScaling)
 
-		_groupIds := make([]*string, len(groupIds))
-		for i, gid := range groupIds {
-			_groupIds[i] = aws.String(gid)
-		}
-		r := autoscaling.DescribeAutoScalingGroupsInput{
-			AutoScalingGroupNames: _groupIds,
-		}
+		m := make(map[string]*awsAutoscalingGroup)
+		for _, region := range regions {
 
-		if out, err := a.svc.DescribeAutoScalingGroups(&r); err == nil {
-			m := make(map[string]*awsAutoscalingGroup)
-			var launchConfigs []*string
-			for _, group := range out.AutoScalingGroups {
-				launchConfigs = append(launchConfigs, group.LaunchConfigurationName)
-				m[*group.AutoScalingGroupName] = &awsAutoscalingGroup{Group: group}
+			_groupIds := make([]*string, len(groupIds))
+			for i, gid := range groupIds {
+				_groupIds[i] = aws.String(gid)
 			}
-			r := autoscaling.DescribeLaunchConfigurationsInput{
-				LaunchConfigurationNames: launchConfigs,
+			r := autoscaling.DescribeAutoScalingGroupsInput{
+				AutoScalingGroupNames: _groupIds,
 			}
-			if out, err := a.svc.DescribeLaunchConfigurations(&r); err == nil {
-				for _, lc := range out.LaunchConfigurations {
-					if cpu, mem, err := a.InstanceResources(*lc.InstanceType); err == nil {
-						for _, g := range m {
-							if *g.LaunchConfigurationName == *lc.LaunchConfigurationName {
-								g.VCPU = cpu
-								g.Memory = mem
-							}
-						}
-					} else {
-						return nil, err
+
+			svc := autoscaling.New(a.session, &aws.Config{
+				Region: aws.String(region),
+			})
+			if out, err := svc.DescribeAutoScalingGroups(&r); err == nil {
+
+				var launchConfigs []*string
+				for _, group := range out.AutoScalingGroups {
+					launchConfigs = append(launchConfigs, group.LaunchConfigurationName)
+					m[*group.AutoScalingGroupName] = &awsAutoscalingGroup{
+						Group:  group,
+						Region: region,
 					}
+				}
+				r := autoscaling.DescribeLaunchConfigurationsInput{
+					LaunchConfigurationNames: launchConfigs,
+				}
+				if out, err := svc.DescribeLaunchConfigurations(&r); err == nil {
+					for _, lc := range out.LaunchConfigurations {
+						if cpu, mem, err := a.InstanceResources(*lc.InstanceType); err == nil {
+							for _, g := range m {
+								if *g.LaunchConfigurationName == *lc.LaunchConfigurationName {
+									g.VCPU = cpu
+									g.Memory = mem
+								}
+							}
+						} else {
+							return nil, err
+						}
+					}
+				} else {
+					return nil, err
 				}
 			} else {
 				return nil, err
 			}
-			a.groups = m
-
-			return a, nil
-		} else {
-			return nil, err
+			a.svc[region] = svc
 		}
+		a.groups = m
+		return a, nil
 	} else {
 		return nil, err
 	}
@@ -144,11 +155,12 @@ func (a *awsAutoScaler) CurrentCapacity(role string) (int, error) {
 		return 0, ErrUnknownRole
 	}
 
+	svc := a.svc[group.Region]
 	r := autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{group.AutoScalingGroupName},
 	}
 
-	if out, err := a.svc.DescribeAutoScalingGroups(&r); err == nil {
+	if out, err := svc.DescribeAutoScalingGroups(&r); err == nil {
 		for _, g := range out.AutoScalingGroups {
 			if *g.AutoScalingGroupName == *group.AutoScalingGroupName {
 				a.groups[role].Group = g
@@ -189,6 +201,7 @@ func (a *awsAutoScaler) Scale(role string, capacity int) error {
 	if !ok {
 		return ErrUnknownRole
 	}
+	svc := a.svc[group.Region]
 
 	if capacity < int(*group.MinSize) {
 		return ErrInvalidCapacity
@@ -200,6 +213,6 @@ func (a *awsAutoScaler) Scale(role string, capacity int) error {
 		AutoScalingGroupName: group.AutoScalingGroupName,
 		DesiredCapacity:      aws.Int64(int64(capacity)),
 	}
-	_, err := a.svc.SetDesiredCapacity(&r)
+	_, err := svc.SetDesiredCapacity(&r)
 	return err
 }

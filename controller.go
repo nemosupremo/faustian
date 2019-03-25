@@ -81,6 +81,7 @@ type ControllerConfig struct {
 		AccessKey string
 		SecretKey string
 		AsgMap    []string
+		Regions   []string
 	}
 }
 
@@ -213,7 +214,7 @@ func NewController(config ControllerConfig) (*Controller, error) {
 			groupIds = append(groupIds, x[1])
 		}
 
-		if as, err := autoscaling.NewAwsAutoScaler(awsCredentials, groupIds...); err == nil {
+		if as, err := autoscaling.NewAwsAutoScaler(awsCredentials, config.Aws.Regions, groupIds...); err == nil {
 			c.AutoScaler = as
 		} else {
 			return nil, err
