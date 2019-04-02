@@ -340,7 +340,7 @@ func (p *Pipeline) TaskInfo(taskID TaskID, offer msg.Offer) []msg.TaskInfo {
 
 		if len(requestedPorts) > 0 {
 			portIds := make([]int, 0, len(requestedPorts))
-			for portId, _ := range requestedPorts {
+			for portId := range requestedPorts {
 				portIds = append(portIds, portId)
 			}
 			sort.Ints(portIds)

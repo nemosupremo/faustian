@@ -397,7 +397,7 @@ func (c *Controller) Run() error {
 							for _, task := range tasks {
 								// don't launch a task if the pipeline contains tasks we are trying to kill
 								// maybe move to IsRunnable?
-								for taskId, _ := range tasksKilling {
+								for taskId := range tasksKilling {
 									if storage.TaskID(taskId).PipelineID() == task.ID.PipelineID() {
 										continue label_offer_tasks_loop
 									}
@@ -474,7 +474,7 @@ func (c *Controller) Run() error {
 									PipelineID: storage.TaskID(taskId).PipelineID(),
 									Updated:    time.Now(),
 									Processes: map[string]*storage.TaskProcess{
-										taskID.ProcessorID(): &storage.TaskProcess{
+										taskID.ProcessorID(): {
 											ID:      event.Update.Status.TaskID.Value,
 											Status:  event.Update.Status.State,
 											AgentID: event.Update.Status.AgentID.Value,
