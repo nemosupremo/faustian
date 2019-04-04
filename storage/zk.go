@@ -144,8 +144,9 @@ func (z *zkStorage) Pipelines(watch bool) (map[string]Pipeline, <-chan zk.Event,
 	var err error
 	if watch {
 		pipelines, _, ch, err = z.Conn.GetW(path.Join(z.Prefix, "pipelines"))
+	} else {
+		pipelines, _, err = z.Conn.Get(path.Join(z.Prefix, "pipelines"))
 	}
-	pipelines, _, err = z.Conn.Get(path.Join(z.Prefix, "pipelines"))
 
 	if err == zk.ErrNoNode {
 		if watch {

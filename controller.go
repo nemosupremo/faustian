@@ -433,7 +433,7 @@ func (c *Controller) Run() error {
 											log.Debugf("Declining offer %v for task %v", offer.ID.Value, task.ID)
 										}
 									} else {
-										log.Warnf("Task ID %v refers to non-existant pipeline %v", task.ID, task.PipelineID)
+										log.Warnf("Task ID %v refers to non-existent pipeline %v", task.ID, task.PipelineID)
 									}
 								}
 							}
