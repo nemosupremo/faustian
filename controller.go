@@ -674,7 +674,7 @@ func (c *Controller) Run() error {
 						log.Warn("Since I couldn't get the tasks, I will shutdown.")
 						return err
 					}
-
+					sort.Strings(taskIds)
 					tasksKilling = make(map[string]struct{})
 
 					log.Debugf("Status: %d Pipelines; %d Tasks", len(pipelines), len(taskIds))
