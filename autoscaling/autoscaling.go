@@ -179,8 +179,14 @@ func (a *awsAutoScaler) DesiredCapacity(role string, cpu int, memory datasize.By
 		return 0, ErrUnknownRole
 	}
 
-	desiredCapacityCPU := (cpu / group.VCPU) + 1
-	desiredCapacityMem := int((memory / group.Memory) + 1)
+	desiredCapacityCPU := (cpu / group.VCPU)
+	if cpu%group.VCPU != 0 {
+		desiredCapacityCPU += 1
+	}
+	desiredCapacityMem := int((memory / group.Memory))
+	if memory%group.Memory != 0 {
+		desiredCapacityMem += 1
+	}
 
 	capacity := desiredCapacityCPU
 	if capacity < desiredCapacityMem {
