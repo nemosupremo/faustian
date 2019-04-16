@@ -358,7 +358,7 @@ func (c *Controller) Run() error {
 						if currentCapacity, err := c.AutoScaler.CurrentCapacity(asgID); err == nil {
 							if desiredCapacity, err := c.AutoScaler.DesiredCapacity(asgID, cpu, mem); err == nil {
 								log.Debugf("[Role: %s] Desired cpu: %v mem: %v capacity: %d current: %d", role, cpu, mem, desiredCapacity, currentCapacity)
-								if desiredCapacity > currentCapacity || desiredCapacity < (currentCapacity-1) {
+								if desiredCapacity != currentCapacity {
 									scaleUp := desiredCapacity > currentCapacity
 									if scaleUp || time.Now().Sub(lastAutoscale) > 5*time.Minute {
 										log.Infof("Autoscaling %v cluster from %d nodes to %d nodes.", role, currentCapacity, desiredCapacity)
