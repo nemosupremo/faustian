@@ -229,7 +229,14 @@ func (c *Controller) UpdatePipeline(w http.ResponseWriter, r *http.Request) {
 			p.Created = time.Now()
 		}
 		created := p.Created
-		{ // this block clones the pipeline
+		currentEnv := p.Environment
+		{
+			// this block "deep" clones the pipeline, so that when we
+			// unmarshal into p, we don't merge our pointer values
+
+			// set environment to nil so we can detect if this field is
+			// overwritten
+			p.Environment = nil
 			if b, err := json.Marshal(p); err == nil {
 				p = storage.Pipeline{}
 				if err := json.Unmarshal(b, &p); err != nil {
@@ -242,6 +249,11 @@ func (c *Controller) UpdatePipeline(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if err := json.NewDecoder(r.Body).Decode(&p); err == nil {
+			if p.Environment == nil {
+				// if the caller didn't provide an environment variable
+				// use the previous environment
+				p.Environment = currentEnv
+			}
 			op := pipelines[pipelineID]
 			newInstances := p.Instances
 			if p.Instances = op.Instances; cmp.Equal(p, op) && !creatingPipeline {
