@@ -501,7 +501,7 @@ func (c *Controller) Run() error {
 						case "TASK_UNREACHABLE":
 							log.Warnf("Received unexpected unreachable update for task %v: %v", event.Update.Status.TaskID.Value, event.Update.Status.Message)
 							if err := c.Scheduler.Kill(event.Update.Status.TaskID.Value, event.Update.Status.AgentID.Value); err != nil {
-								log.Warnf("Failed to kill unreachable task %v: %v", taskId, err)
+								log.Warnf("Failed to kill unreachable task %v: %v", event.Update.Status.TaskID.Value, err)
 							}
 						}
 
