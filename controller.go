@@ -498,7 +498,7 @@ func (c *Controller) Run() error {
 						case "TASK_ERROR", "TASK_FAILED", "TASK_DROPPED", "TASK_GONE", "TASK_GONE_BY_OPERATOR", "TASK_LOST":
 							task.Failures += 1
 							log.Warnf("Received unexpected terminal update for task %v: %v", event.Update.Status.TaskID.Value, event.Update.Status.Message)
-						case "TASK_UNREACHABLE", "TASK_UNKNOWN":
+						case "TASK_UNREACHABLE":
 							log.Warnf("Received unexpected unreachable update for task %v: %v", event.Update.Status.TaskID.Value, event.Update.Status.Message)
 							if err := c.Scheduler.Kill(event.Update.Status.TaskID.Value, event.Update.Status.AgentID.Value); err != nil {
 								log.Warnf("Failed to kill unreachable task %v: %v", event.Update.Status.TaskID.Value, err)
